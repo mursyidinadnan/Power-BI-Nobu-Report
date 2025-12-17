@@ -162,36 +162,51 @@
   const slides = document.getElementById('slides');
   const dots = document.querySelectorAll('.dot');
   const carousel = document.querySelector('.carousel');
+
   const total = dots.length;
-  const interval = 60000;
+  const interval = 50000; // ✅ 50 detik
 
   let index = 0;
   let timer;
 
+  // clone first slide for smooth loop
   const firstClone = slides.children[0].cloneNode(true);
   slides.appendChild(firstClone);
+
+  // index awal tiap group
+  const groupBoundaries = [0, 7, 11, 13];
+
+  function isGroupChange(from, to) {
+    return groupBoundaries.includes(to);
+  }
 
   function updateDots(i) {
     dots.forEach(d => d.classList.remove('active'));
     dots[i % total].classList.add('active');
   }
 
-  function goToSlide(i) {
-    slides.style.transition = 'transform 0.8s ease-in-out';
+  function goToSlide(i, smoothGroup = false) {
+    slides.style.transition = smoothGroup
+      ? 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)' // ✨ extra smooth antar group
+      : 'transform 0.8s ease-in-out';
+
     slides.style.transform = `translateX(-${i * 100}vw)`;
     updateDots(i);
   }
 
   function nextSlide() {
+    const prevIndex = index;
     index++;
-    goToSlide(index);
+
+    const smoothGroup = isGroupChange(prevIndex, index);
+    goToSlide(index, smoothGroup);
 
     if (index === total) {
       setTimeout(() => {
         slides.style.transition = 'none';
         slides.style.transform = 'translateX(0)';
         index = 0;
-      }, 800);
+      }, smoothGroup ? 1400 : 800);
     }
   }
 
@@ -207,7 +222,7 @@
     dot.addEventListener('click', () => {
       stop();
       index = Number(dot.dataset.index);
-      goToSlide(index);
+      goToSlide(index, true);
       start();
     });
   });
@@ -217,6 +232,7 @@
 
   start();
 </script>
+
 
 </body>
 </html>
