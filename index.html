@@ -164,10 +164,10 @@
   const carousel = document.querySelector('.carousel');
 
   const total = dots.length;
-  const interval = 50000; // ✅ 50 detik
+  const interval = 30000; // 30 detik
 
   let index = 0;
-  let timer;
+  let timer = null;
 
   // clone first slide for smooth loop
   const firstClone = slides.children[0].cloneNode(true);
@@ -187,7 +187,7 @@
 
   function goToSlide(i, smoothGroup = false) {
     slides.style.transition = smoothGroup
-      ? 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)' // ✨ extra smooth antar group
+      ? 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)'
       : 'transform 0.8s ease-in-out';
 
     slides.style.transform = `translateX(-${i * 100}vw)`;
@@ -201,6 +201,7 @@
     const smoothGroup = isGroupChange(prevIndex, index);
     goToSlide(index, smoothGroup);
 
+    // reset ke awal (loop)
     if (index === total) {
       setTimeout(() => {
         slides.style.transition = 'none';
@@ -211,13 +212,16 @@
   }
 
   function start() {
+    if (timer) return; // ⛔ cegah interval dobel
     timer = setInterval(nextSlide, interval);
   }
 
   function stop() {
     clearInterval(timer);
+    timer = null;
   }
 
+  // klik dot
   dots.forEach(dot => {
     dot.addEventListener('click', () => {
       stop();
@@ -227,9 +231,11 @@
     });
   });
 
+  // pause saat hover (boleh dihapus kalau mode TV)
   carousel.addEventListener('mouseenter', stop);
   carousel.addEventListener('mouseleave', start);
 
+  // mulai pertama kali
   start();
 </script>
 
