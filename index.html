@@ -6,82 +6,122 @@
   <title>Power BI Carousel Fullscreen</title>
 
   <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #000;
-    }
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+}
 
-    .carousel {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-    }
+.carousel {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
 
-    .slides {
-      display: flex;
-      height: 100%;
-      transition: transform 0.8s ease-in-out;
-    }
+.slides {
+  display: flex;
+  height: 100%;
+  transition: transform 0.8s ease-in-out;
+}
 
-    .slide {
-      width: 100vw;
-      height: 100vh;
-      flex-shrink: 0;
-    }
+.slide {
+  width: 100vw;
+  height: 100vh;
+  flex-shrink: 0;
+}
 
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
 
-    /* indicator wrapper */
-    .indicator-wrapper {
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 28px;
-      z-index: 10;
-      font-family: Arial, sans-serif;
-    }
+/* INDICATOR */
+.indicator-wrapper {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 28px;
+  z-index: 10;
+  font-family: Arial, sans-serif;
+}
 
-    .indicator-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
+.indicator-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
 
-    .group-label {
-      font-size: 11px;
-      color: #aaa;
-      letter-spacing: 1px;
-    }
+.group-label {
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 1px;
+}
 
-    .indicator {
-      display: flex;
-      gap: 10px;
-    }
+.indicator {
+  display: flex;
+  gap: 10px;
+}
 
-    .dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: rgba(128, 170, 173,0.5);
-      cursor: pointer;
-      transition: transform 0.3s, background 0.3s;
-    }
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(128,170,173,0.5);
+  cursor: pointer;
+  transition: transform 0.3s, background 0.3s;
+}
 
-    .dot.active {
-      background: #00e5ff;
-      transform: scale(1.3);
-    }
-  </style>
+.dot.active {
+  background: #00e5ff;
+  transform: scale(1.3);
+}
+
+/* COUNTDOWN RING */
+#countdown-wrapper {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  z-index: 20;
+}
+
+#countdown-wrapper svg {
+  transform: rotate(-90deg);
+}
+
+#countdown-wrapper circle {
+  fill: none;
+  stroke-width: 4;
+}
+
+.bg {
+  stroke: rgba(255,255,255,0.15);
+}
+
+.progress {
+  stroke: #00e5ff;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+
+#countdown-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: #00e5ff;
+}
+</style>
 </head>
 <body>
 
@@ -156,89 +196,77 @@
       </div>
     </div>
   </div>
+<!-- COUNTDOWN RING -->
+  <div id="countdown-wrapper">
+    <svg width="56" height="56">
+      <circle class="bg" cx="28" cy="28" r="24"></circle>
+      <circle class="progress" cx="28" cy="28" r="24"></circle>
+    </svg>
+    <div id="countdown-text">30</div>
+  </div>
 </div>
 
 <script>
-  const slides = document.getElementById('slides');
-  const dots = document.querySelectorAll('.dot');
-  const carousel = document.querySelector('.carousel');
+const slides = document.getElementById('slides');
+const dots = document.querySelectorAll('.dot');
+const textEl = document.getElementById('countdown-text');
+const progressEl = document.querySelector('.progress');
 
-  const total = dots.length;
-  const interval = 30000; // 30 detik
+const total = dots.length;
+const intervalSeconds = 30;
+const radius = 24;
+const circumference = 2 * Math.PI * radius;
 
-  let index = 0;
-  let timer = null;
+progressEl.style.strokeDasharray = circumference;
 
-  // clone first slide for smooth loop
-  const firstClone = slides.children[0].cloneNode(true);
-  slides.appendChild(firstClone);
+let index = 0;
+let remaining = intervalSeconds;
+let timer = null;
 
-  // index awal tiap group
-  const groupBoundaries = [0, 7, 11, 13];
+function updateDots() {
+  dots.forEach(d => d.classList.remove('active'));
+  dots[index].classList.add('active');
+}
 
-  function isGroupChange(from, to) {
-    return groupBoundaries.includes(to);
-  }
+function updateRing() {
+  const offset = circumference * (1 - remaining / intervalSeconds);
+  progressEl.style.strokeDashoffset = offset;
+  textEl.textContent = remaining;
+}
 
-  function updateDots(i) {
-    dots.forEach(d => d.classList.remove('active'));
-    dots[i % total].classList.add('active');
-  }
+function goToSlide(i) {
+  slides.style.transform = `translateX(-${i * 100}vw)`;
+  updateDots();
+  remaining = intervalSeconds;
+  updateRing();
+}
 
-  function goToSlide(i, smoothGroup = false) {
-    slides.style.transition = smoothGroup
-      ? 'transform 1.4s cubic-bezier(0.22, 1, 0.36, 1)'
-      : 'transform 0.8s ease-in-out';
+function nextSlide() {
+  index++;
+  if (index >= total) index = 0;
+  goToSlide(index);
+}
 
-    slides.style.transform = `translateX(-${i * 100}vw)`;
-    updateDots(i);
-  }
+function start() {
+  timer = setInterval(() => {
+    remaining--;
+    updateRing();
+    if (remaining <= 0) nextSlide();
+  }, 1000);
+}
 
-  function nextSlide() {
-    const prevIndex = index;
-    index++;
-
-    const smoothGroup = isGroupChange(prevIndex, index);
-    goToSlide(index, smoothGroup);
-
-    // reset ke awal (loop)
-    if (index === total) {
-      setTimeout(() => {
-        slides.style.transition = 'none';
-        slides.style.transform = 'translateX(0)';
-        index = 0;
-      }, smoothGroup ? 1400 : 800);
-    }
-  }
-
-  function start() {
-    if (timer) return; // ⛔ cegah interval dobel
-    timer = setInterval(nextSlide, interval);
-  }
-
-  function stop() {
+dots.forEach(dot => {
+  dot.addEventListener('click', () => {
     clearInterval(timer);
-    timer = null;
-  }
-
-  // klik dot
-  dots.forEach(dot => {
-    dot.addEventListener('click', () => {
-      stop();
-      index = Number(dot.dataset.index);
-      goToSlide(index, true);
-      start();
-    });
+    index = Number(dot.dataset.index);
+    goToSlide(index);
+    start();
   });
+});
 
-  // pause saat hover (boleh dihapus kalau mode TV)
-  carousel.addEventListener('mouseenter', stop);
-  carousel.addEventListener('mouseleave', start);
-
-  // mulai pertama kali
-  start();
+goToSlide(0);
+start();
 </script>
-
 
 </body>
 </html>
